@@ -1,33 +1,28 @@
-FROM raigen/rpi-alpine-perl
-
-MAINTAINER Raigen
+FROM armhf/alpine:latest
 
 ENV FHEM_VERSION 5.7
 
-RUN apk add --update perl-device-serialport \
+RUN apk add --update perl \
+                     perl-device-serialport \
                      perl-io-socket-ssl \
                      perl-libwww \
                      perl-xml-simple \
         && rm -rf /var/cache/apk/*
 
-RUN mkdir -p /opt/fhem && \
+ADD http://fhem.de/fhem-${FHEM_VERSION}.tar.gz /tmp/fhem.tar
+
+RUN mkdir /opt && cd /opt && \
+    tar xf /tmp/fhem.tar && \
+    ln -s /opt/fhem-${FHEM_VERSION} /opt/fhem && \
     addgroup fhem && \
-    adduser -D -G fhem -h /opt/fhem -u 1000 fhem
-
-VOLUME /opt/fhem
-
-ADD http://fhem.de/fhem-${FHEM_VERSION}.tar.gz /usr/local/lib/fhem.tar
-RUN cd /opt && tar xvf /usr/local/lib/fhem.tar
-RUN echo 'attr global nofork 1\n' >> /opt/fhem-5.7/fhem.cfg
+    adduser -D -G fhem -h /opt/fhem -u 501 fhem && \
+    rm /tmp/fhem.tar
 
 EXPOSE 8083 8084 8085 7072
-
-COPY fhem.sh /usr/local/bin/fhem.sh
-RUN chmod a+x /usr/local/bin/fhem.sh
 
 WORKDIR /opt/fhem
 
 USER fhem
 
-ENTRYPOINT ["/usr/local/bin/fhem.sh"]
+CMD /usr/bin/perl fhem.pl fhem.cfg
 
